@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { Fragment } from 'react';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/layout/Navbar';
 import Users from './components/users/Users';
 import axios from 'axios';
 import Search from './components/users/Search';
 import Alert from './components/layout/Alert';
+import About from './components/pages/About';
+import User from './components/users/User';
+
 
 
 class App extends React.Component {
 
   state = {
     users: [],
+    user: {},
     loading: false,
     alert: null
   }
@@ -24,6 +29,16 @@ class App extends React.Component {
     this.setState({ users: res.data.items, loading: false })
   }
 
+  // Get User
+
+  getUser = async (username) => {
+    this.setState({ loading: true });
+
+    const res = await axios.get(`https://api.github.com/users/${username}?client_id=${process.env.REACT_APP_GITHUB_CLIENT_ID}&client_secret=${process.env.REACT_APP_GITHUB_CLIENT_SECRET}`)
+
+    this.setState({user: res.data, loading: false });
+  }
+
   // Clear Users
   clearUsers = () => {
       this.setState({ users: [] })
@@ -35,18 +50,30 @@ class App extends React.Component {
 
 
   render() {
-    const { users, loading } = this.state;
-    return  (
+  const { users, loading, user } = this.state;
+  return  (
+    <Router>
       <div className="App">
         <Navbar />
         <div className="container">
           <Alert alert={this.state.alert}/>
-          <Search searchUsers={this.searchUsers} clearUsers={this.clearUsers} showClear={this.state.users.length > 0 ? true: false} setAlert={this.setAlert}/>
-          <Users users={users} loading={loading}/>
+          <Switch>
+            <Route exact path='/' render={props => (
+                <Fragment>
+                    <Search searchUsers={this.searchUsers} clearUsers={this.clearUsers} showClear={this.state.users.length > 0 ? true: false} setAlert={this.setAlert}/>
+                    <Users users={users} loading={loading}/>
+                </Fragment>
+            )}/>
+            <Route exact path='/about' component={About}/>
+            <Route exact path='/user/:login' render={props => (
+              <User { ...props } getUser={this.getUser} user={user} loading={loading}/>
+            )}/>
+          </Switch>
         </div>
       </div>
-    );
-  }
+    </Router>
+  );
+}
 }
 
 export default App;
